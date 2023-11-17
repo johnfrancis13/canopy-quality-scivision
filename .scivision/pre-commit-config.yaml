@@ -1,0 +1,14 @@
+name: canopy_quality_model
+url: https://github.com/johnfrancis13/canopy-quality-scivision
+import: canopy-quality-scivision
+model: canopy_quality
+args:
+    label_level: label3_detritus
+prediction_fn:
+    call: predict_batch
+    args:
+        X: image
+    kwargs:
+        batch_size: 3
+
+
