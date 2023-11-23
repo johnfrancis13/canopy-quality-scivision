@@ -1,5 +1,6 @@
 import numpy as np
-from canopy_quality import treenet
+from canopy_model.model import treenet
+
 
 # load model
 model = treenet()
