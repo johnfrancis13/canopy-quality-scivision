@@ -3,16 +3,14 @@ from canopy_model.model import treenet
 
 
 # load model
-model = treenet()
+model = treenet(model_type = "multi_spectral")
 
 # test numpy array
-## create RGB image
-image = np.random.randint(255, size=(240, 240, 3), dtype=np.uint8)
+# load model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+## create 14 band image
+image = np.random.randint(255, size=(1, 14, 240, 240), dtype=np.uint8)
 
 ##predict
-y = model.predict(image)
-
-# test batch
-##predict
-#image_batch = 
-y = model.predict_batch(image_batch, batch_size=16)
+y = model.predict(np_image=image)

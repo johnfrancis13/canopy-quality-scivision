@@ -13,15 +13,19 @@ import pooch
 
 
 class treenet:
-    def __init__(self, model_weights: dict = None):
+    def __init__(self, model_weights: dict = None, model_type = "multi_spectral"):
 
         if model_weights is None:
             # RGB
-            model_weights = dict(url="doi:10.5281/zenodo.10149636/pytorch_mtloss_partshared_manual.pt",
-                             known_hash="md5:76fceb351a331d354cbe4d8e3da8a363")
-            # 12 band, RGB + NIR + Sentinel 2
-            # model_weights = dict(url="doi:10.5281/zenodo.10149636/pytorch_mtloss_partshared_manual_allbands.pt",
-            #                  known_hash="md5:450007e5233c08f595d549b873a9ff12")
+#             if model_type == "RGB":
+#                 model_weights = dict(url="doi:10.5281/zenodo.10149636/pytorch_mtloss_partshared_manual.pt",
+#                                  known_hash="md5:76fceb351a331d354cbe4d8e3da8a363")
+            
+            # 12 band, RGB + NIR + Sentinel 2    
+            if model_type == "multi_spectral":
+                model_weights = dict(url="https://zenodo.org/records/10149637/files/pytorch_mtloss_partshared_manual_allbands.pt",
+                                  known_hash="md5:450007e5233c08f595d549b873a9ff12")
+                pooch.retrieve(url=model_weights['url'], known_hash= model_weights['known_hash'])
 
         # ---- DOWNLOAD
         self.model_weights = pooch.retrieve(url=model_weights['url'], known_hash=model_weights['known_hash'])
@@ -147,12 +151,9 @@ class treenet:
         # Load in the model weights
         treenet.load_state_dict(torch.load(self.model_weights, map_location=torch.device('cpu')))
         
-        
-        
-        
         #initialise the model in evaluation mode
         self.model = treenet
-        self.model.eval()
+        #self.model.eval()
 
         
         
@@ -163,7 +164,7 @@ class treenet:
 #         imw = im_target.image_width.values
 #         return idx, image[0:iml, 0:imw, :]
 
-    def show_output(self, obs, preds_m, preds_h, xarray=False):
+    def show_output(self, obs, preds_m, preds_h):
 
         # not sure if i want a way to display a full batch
 #         if xarray:
@@ -175,31 +176,26 @@ class treenet:
 #                 plt.imshow(image[1])
 #                 plt.axis('off')
 #                 plt.title("Prediction", fontsize='xx-large')
-        else:
-            plt.figure(figsize=(10, 15))
-            
-            # Original Image
-            ax = plt.subplot(1,3, 1)
-            plt.imshow(obs/255)
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
-            ax.set_aspect('equal')
-            
-            # Predicted Tree Mask
-            ax = plt.subplot(1,3, 2)
-            plt.imshow(preds_m)
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
-            ax.set_aspect('equal')
-            
-            # Predicted Tree Height
-            ax = plt.subplot(1,3, 3)
-            plt.imshow(preds_h)
-            ax.get_xaxis().set_visible(False)
-            ax.get_yaxis().set_visible(False)
-            ax.set_aspect('equal')
-            
-            plt.title("Prediction", fontsize='xx-large')
+
+        # Original Image
+        ax = plt.subplot(1,3, 1)
+        plt.imshow(np.transpose(image.squeeze()[0:3], axes=[1,2,0])/255)
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.set_aspect('equal')
+        
+        # Predicted Tree Mask
+        ax = plt.subplot(1,3, 2)
+        plt.imshow(y[0].squeeze())
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.set_aspect('equal')
+        # Predicted Tree Height
+        ax = plt.subplot(1,3, 3)
+        plt.imshow(y[1].squeeze())
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.set_aspect('equal')
             
         
         plt.show()
@@ -208,18 +204,6 @@ class treenet:
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # add with and length info
-        image = image.assign(
-            image_width = image['EXIF Image ImageWidth'].to_pandas().apply(lambda x: x.values[0]),
-            image_length = image['EXIF Image ImageLength'].to_pandas().apply(lambda x: x.values[0])
-        )
-
-#         dataset = PlanktonDataset(image)
-
-#         dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-        mean_absolute_error = MeanAbsoluteError(nan_strategy='ignore').to(device)
-    
-        my_dataset = dataset_eval(filelist=filelist)
         my_dataloader = DataLoader(my_dataset, batch_size=16,shuffle=False)
 
         height_mae = []
@@ -255,30 +239,26 @@ class treenet:
         return pred_tree_mask, pred_tree_height
 
     def predict(self, np_image: np.ndarray) -> np.ndarray:
+        # want shape (1,14,240,240)
         
-        image = image  # Returned image is a NumPy array with shape (16, 60, 60) for example.
-        
-        # predict values based on the two different models
-        X=np_image[:,:14,:,:].copy() # separate out the band values
-        X[X  < .0000001] = 0
-        X = np.transpose(X, axes=[0, 2, 3, 1])
+        # Ensure no very small values (might have been an artifact of the original data)
+        np_image[np_image  < .0000001] = 0
         
         # normalize values of the input data to 0,1
-        X = X/X.max(axis=(3),keepdims=True)
+        np_image = np_image/np_image.max(axis=(1),keepdims=True)
         
-        X = np.transpose(X, axes=[0,3,1,2])
-        X= torch.from_numpy(X)
-        X= X.to(device)
-        X = Variable(X.float().cuda())
+        np_image = torch.from_numpy(np_image)
+        np_image = np_image.to(device)
+        np_image = Variable(np_image.float())
+        #np_image = Variable(np_image.float().cuda())
         
         with torch.inference_mode():
-            pred_tree_height, pred_tree_mask = self.model(X)
+            pred_tree_height, pred_tree_mask = self.model(np_image)
+            pred_tree_mask = custom_replace(pred_tree_mask, .4) # .4+ probability= tree
+            pred_tree_height[pred_tree_height  < 0 ] = 0 # no negative tree heights
+            pred_tree_height = torch.squeeze(pred_tree_height)*torch.squeeze(pred_tree_mask) #0s get rid of non tree pixels
 
-        pred_tree_mask = custom_replace(pred_tree_mask, .4) # .4+ probability= tree
-        pred_tree_height[pred_tree_height  < 0 ] = 0 # no negative tree heights
-        pred_tree_height = torch.squeeze(pred_tree_height)*torch.squeeze(pred_tree_mask) #0s get rid of non tree pixels
-
-        self.show_output(image,pred_tree_mask, pred_tree_height)#,xarray=False)
+        self.show_output(image,pred_tree_mask, pred_tree_height)
 
         return pred_tree_mask, pred_tree_height
 
