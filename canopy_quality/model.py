@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,8 +11,6 @@ from utils import custom_replace, calculate_iou
 from data import batch_data_clean
 import pooch
 
-
-# In[88]:
 
 
 class treenet:
@@ -273,37 +265,3 @@ class treenet:
 
 if __name__ == "__main__":
     pass
-
-
-# In[89]:
-
-
-# test numpy array
-# load model
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model = treenet(model_type = "multi_spectral")
-
-## create RGB image
-image = np.random.randint(255, size=(14, 240, 240), dtype=np.uint8)
-
-##predict
-y = model.predict(np_image=image)
-
-
-# In[92]:
-
-
-# test batch
-##predict
-#image_batch = 
-images = np.random.randint(255, size=(25, 14, 240, 240), dtype=np.uint8)
-y = model.predict_batch(images, batch_size=16)
-print(len(y),len(y[0]),len(y[1]))
-
-
-# In[90]:
-
-
-a= np.load("../example_data/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
-y = model.predict(np_image=a)
-
