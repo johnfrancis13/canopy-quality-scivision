@@ -179,20 +179,20 @@ class treenet:
 
         # Original Image
         ax = plt.subplot(1,3, 1)
-        plt.imshow(np.transpose(image.squeeze()[0:3], axes=[1,2,0])/255)
+        plt.imshow(np.transpose(obs.squeeze()[0:3], axes=[1,2,0])/255)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.set_aspect('equal')
         
         # Predicted Tree Mask
         ax = plt.subplot(1,3, 2)
-        plt.imshow(y[0].squeeze())
+        plt.imshow(preds_m.squeeze())
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.set_aspect('equal')
         # Predicted Tree Height
         ax = plt.subplot(1,3, 3)
-        plt.imshow(y[1].squeeze())
+        plt.imshow(preds_h.squeeze())
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.set_aspect('equal')
@@ -200,43 +200,42 @@ class treenet:
         
         plt.show()
 
-    def predict_batch(self, image: np.ndarray, batch_size: int):
+#     def predict_batch(self, image: np.ndarray, batch_size: int):
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        my_dataloader = DataLoader(my_dataset, batch_size=16,shuffle=False)
+#         my_dataloader = DataLoader(my_dataset, batch_size=16,shuffle=False)
 
-        height_mae = []
-        mask_iou = []
-        with torch.inference_mode():
-            for i_batch, sample_batched in enumerate(my_dataloader):
-                X,Y= sample_batched
-                X= X.to(device)
+#         height_mae = []
+#         mask_iou = []
+#         with torch.inference_mode():
+#             for i_batch, sample_batched in enumerate(my_dataloader):
+#                 X= sample_batched.to(device)
                 
-                Y[0]=Y[0].to(device) 
-                Y[1]=Y[1].to(device)
+#                 Y[0]=Y[0].to(device) 
+#                 Y[1]=Y[1].to(device)
                 
-                X = Variable(X.float().cuda())
-                Y[0] = Variable(Y[0].float().cuda())
-                Y[1] = Variable(Y[1].float().cuda())
+#                 X = Variable(X.float().cuda())
+#                 Y[0] = Variable(Y[0].float().cuda())
+#                 Y[1] = Variable(Y[1].float().cuda())
 
-                # Forward pass
-                pred_tree_height, pred_tree_mask = self.model(X)
+#                 # Forward pass
+#                 pred_tree_height, pred_tree_mask = self.model(X)
         
-                # mask predicted tree height with the tree mask
-                pred_tree_mask = custom_replace(pred_tree_mask, .4) # .4+ probability= tree
-                pred_tree_height[pred_tree_height  < 0 ] = 0 # no negative tree heights
-                pred_tree_height = torch.squeeze(pred_tree_height)*torch.squeeze(pred_tree_mask) #0s get rid of non tree pixels
+#                 # mask predicted tree height with the tree mask
+#                 pred_tree_mask = custom_replace(pred_tree_mask, .4) # .4+ probability= tree
+#                 pred_tree_height[pred_tree_height  < 0 ] = 0 # no negative tree heights
+#                 pred_tree_height = torch.squeeze(pred_tree_height)*torch.squeeze(pred_tree_mask) #0s get rid of non tree pixels
 
-                # If ground truth data can calculate some metrics
-                actual_tree_height= Y[0]*torch.squeeze(pred_tree_mask)
-                height_mae.append(mean_absolute_error(pred_tree_height,actual_tree_height).item())
-                mask_iou.append(iou_score(torch.squeeze(pred_tree_mask),Y[1].type(torch.LongTensor).to(device)))
+#                 # If ground truth data can calculate some metrics
+#                 actual_tree_height= Y[0]*torch.squeeze(pred_tree_mask)
+#                 height_mae.append(mean_absolute_error(pred_tree_height,actual_tree_height).item())
+#                 mask_iou.append(iou_score(torch.squeeze(pred_tree_mask),Y[1].type(torch.LongTensor).to(device)))
         
 
-        self.show_output(image,pred_tree_mask, pred_tree_height)#,xarray=True)
+#         self.show_output(image,pred_tree_mask, pred_tree_height)#,xarray=True)
 
-        return pred_tree_mask, pred_tree_height
+#         return pred_tree_mask, pred_tree_height
 
     def predict(self, np_image: np.ndarray) -> np.ndarray:
         # want shape (1,14,240,240)
