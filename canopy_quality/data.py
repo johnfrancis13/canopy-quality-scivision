@@ -1,41 +1,39 @@
 import torch
 from torch.utils.data import Dataset
+from torch.autograd import Variable
 
 
 ### Create Dataloaders using the file paths ###
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Create two DataLoaders, one for training and one for test
-class dataset_eval(Dataset):
-    def __init__(self,filelist_train, transform=None):
+class batch_data_clean(Dataset):
+    def __init__(self,image_arrays, transform=None):
         """
         Args:
-            filelist (string): List with all of the file paths
+            image_arrays (np arrays): Ndarray with all of the images
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
         self.transform = transform
-        self.filelist = filelist_train           
+        self.image_list = image_arrays           
 
     def __len__(self):
-        return len(self.filelist)
+        return len(self.image_list)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()    
             
         # Generate data
-        dataset = np.load(self.filelist[idx])
+        np_image = self.image_list[idx]
+        # Shape should be (1, 14, 240, 240) - add some validation
         
-        # X
-        X=dataset[:14] # separate out the band values
-
-        # canopy_height,tree/not tree,ndvi
-        out_tree_height = dataset[14]         
-        out_tree_mask = dataset[15]
+        np_image[np_image  < .0000001] = 0
         
-        preds=[out_tree_height, out_tree_mask]
+        # normalize values of the input data to 0,1
+        np_image = np_image/np_image.max(axis=(1),keepdims=True)
         
-        return [X,preds]
-    
-
+        np_image = torch.from_numpy(np_image)
+        np_image = np_image.to(device)
+        np_image = Variable(np_image.float())
+        
+        return np_image

@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,8 +14,11 @@ from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 from torchmetrics.classification import BinaryJaccardIndex
 from utils import custom_replace, calculate_iou
-from data import dataset_eval
+from data import batch_data_clean
 import pooch
+
+
+# In[88]:
 
 
 class treenet:
@@ -200,48 +209,48 @@ class treenet:
         
         plt.show()
 
-#     def predict_batch(self, image: np.ndarray, batch_size: int):
+    def predict_batch(self, images: np.ndarray, batch_size: int):
 
-#         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-#         my_dataloader = DataLoader(my_dataset, batch_size=16,shuffle=False)
-
-#         height_mae = []
-#         mask_iou = []
-#         with torch.inference_mode():
-#             for i_batch, sample_batched in enumerate(my_dataloader):
-#                 X= sample_batched.to(device)
-                
-#                 Y[0]=Y[0].to(device) 
-#                 Y[1]=Y[1].to(device)
-                
-#                 X = Variable(X.float().cuda())
-#                 Y[0] = Variable(Y[0].float().cuda())
-#                 Y[1] = Variable(Y[1].float().cuda())
-
-#                 # Forward pass
-#                 pred_tree_height, pred_tree_mask = self.model(X)
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         
-#                 # mask predicted tree height with the tree mask
-#                 pred_tree_mask = custom_replace(pred_tree_mask, .4) # .4+ probability= tree
-#                 pred_tree_height[pred_tree_height  < 0 ] = 0 # no negative tree heights
-#                 pred_tree_height = torch.squeeze(pred_tree_height)*torch.squeeze(pred_tree_mask) #0s get rid of non tree pixels
-
-#                 # If ground truth data can calculate some metrics
-#                 actual_tree_height= Y[0]*torch.squeeze(pred_tree_mask)
-#                 height_mae.append(mean_absolute_error(pred_tree_height,actual_tree_height).item())
-#                 mask_iou.append(iou_score(torch.squeeze(pred_tree_mask),Y[1].type(torch.LongTensor).to(device)))
+        my_dataset = batch_data_clean(image_arrays=images)
+        my_dataloader = DataLoader(my_dataset, batch_size=batch_size,shuffle=False)
         
+        
+        all_tree_heights = []
+        all_tree_masks = []
+        with torch.inference_mode():
+            for i_batch, sample_batched in enumerate(my_dataloader):
+                image_batch= sample_batched
+                
+                image_batch= image_batch.to(device)
+                #image_batch = Variable(image_batch.float().cuda())
+                image_batch = Variable(image_batch.float())
 
-#         self.show_output(image,pred_tree_mask, pred_tree_height)#,xarray=True)
+                # Forward pass
+                pred_tree_heights, pred_tree_masks = self.model(image_batch)
+        
+                # mask predicted tree height with the tree mask
+                pred_tree_masks = custom_replace(pred_tree_masks, .4) # .4+ probability= tree
+                pred_tree_heights[pred_tree_heights  < 0 ] = 0 # no negative tree heights
+                pred_tree_heights = torch.squeeze(pred_tree_heights)*torch.squeeze(pred_tree_masks) #0s get rid of non tree pixels
+                all_tree_heights.extend(pred_tree_heights)
+                all_tree_masks.extend(torch.squeeze(pred_tree_masks))
+        
+        # For now just visualize the first image
+        self.show_output(images[0],all_tree_masks[0], all_tree_heights[0])
 
-#         return pred_tree_mask, pred_tree_height
+        return all_tree_masks, all_tree_heights
 
     def predict(self, np_image: np.ndarray) -> np.ndarray:
         # want shape (1,14,240,240)
         
-        # Ensure no very small values (might have been an artifact of the original data)
-        np_image[np_image  < .0000001] = 0
+        # copy for plotting... better way to do this?
+        og_image = np_image.copy()
+        
+        # want shape (1,14,240,240)
+        np_image = np.expand_dims(np_image[:14], axis=0)
+        np_image[np_image  < .0000001] = 0 # Ensure no very small values (might have been an artifact of the original data)
         
         # normalize values of the input data to 0,1
         np_image = np_image/np_image.max(axis=(1),keepdims=True)
@@ -257,10 +266,44 @@ class treenet:
             pred_tree_height[pred_tree_height  < 0 ] = 0 # no negative tree heights
             pred_tree_height = torch.squeeze(pred_tree_height)*torch.squeeze(pred_tree_mask) #0s get rid of non tree pixels
 
-        self.show_output(image,pred_tree_mask, pred_tree_height)
+        self.show_output(og_image,pred_tree_mask, pred_tree_height)
 
         return pred_tree_mask, pred_tree_height
 
 
 if __name__ == "__main__":
     pass
+
+
+# In[89]:
+
+
+# test numpy array
+# load model
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = treenet(model_type = "multi_spectral")
+
+## create RGB image
+image = np.random.randint(255, size=(14, 240, 240), dtype=np.uint8)
+
+##predict
+y = model.predict(np_image=image)
+
+
+# In[92]:
+
+
+# test batch
+##predict
+#image_batch = 
+images = np.random.randint(255, size=(25, 14, 240, 240), dtype=np.uint8)
+y = model.predict_batch(images, batch_size=16)
+print(len(y),len(y[0]),len(y[1]))
+
+
+# In[90]:
+
+
+a= np.load("../example_data/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
+y = model.predict(np_image=a)
+
