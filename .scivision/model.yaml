@@ -3,7 +3,7 @@ url: https://github.com/johnfrancis13/canopy-quality-scivision
 import: canopy_quality
 model: treenet
 args:
-    label_level: label3_detritus
+    model_type: multi_spectral
 prediction_fn:
     call: predict
     args:

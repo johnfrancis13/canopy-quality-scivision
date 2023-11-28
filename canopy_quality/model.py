@@ -11,26 +11,30 @@ from utils import custom_replace, calculate_iou
 from data import batch_data_clean
 import pooch
 
-
-
 class treenet:
     def __init__(self, model_weights: dict = None, model_type = "multi_spectral"):
 
         if model_weights is None:
             # RGB
-#             if model_type == "RGB":
-#                 model_weights = dict(url="doi:10.5281/zenodo.10149636/pytorch_mtloss_partshared_manual.pt",
-#                                  known_hash="md5:76fceb351a331d354cbe4d8e3da8a363")
+            if model_type == "rgb":
+                model_weights = dict(url="doi:10.5281/zenodo.10149636/pytorch_mtloss_partshared_manual.pt",
+                                     known_hash="md5:76fceb351a331d354cbe4d8e3da8a363")
+                first_layer = 3
+                self.num_bands_input = 3
             
-            # 12 band, RGB + NIR + Sentinel 2    
+            # 14 band, RGB + NIR + Sentinel 2 (10 bands)    
             if model_type == "multi_spectral":
                 model_weights = dict(url="https://zenodo.org/records/10149637/files/pytorch_mtloss_partshared_manual_allbands.pt",
                                   known_hash="md5:450007e5233c08f595d549b873a9ff12")
                 pooch.retrieve(url=model_weights['url'], known_hash= model_weights['known_hash'])
+                first_layer = 14
+                self.num_bands_input = 14
+                
+            if model_type != "rgb" and model_type != "multi_spectral":
+                raise ValueError("model_type must be one of ['rgb','multi_spectral']")
 
         # ---- DOWNLOAD
         self.model_weights = pooch.retrieve(url=model_weights['url'], known_hash=model_weights['known_hash'])
-
 
         # ---- LOAD MODEL        
         def defineUNetModel_partiallyshared():
@@ -57,7 +61,7 @@ class treenet:
                 def __init__(self_unet):
                     super().__init__()
         
-                    self_unet.dconv_down1 = double_conv0(14, 32)
+                    self_unet.dconv_down1 = double_conv0(first_layer, 32)
                     self_unet.dconv_down2 = double_conv(32, 64)
                     self_unet.dconv_down3 = double_conv(64, 128)
                     self_unet.dconv_down4 = nn.Sequential(
@@ -152,31 +156,11 @@ class treenet:
         # Load in the model weights
         treenet.load_state_dict(torch.load(self.model_weights, map_location=torch.device('cpu')))
         
-        #initialise the model in evaluation mode
+        #initialise the model
         self.model = treenet
-        #self.model.eval()
 
-        
-        
-#     def get_sample(self, ds, idx):
-#         im_target = ds.sel(concat_dim=idx)
-#         image = im_target['raster'].values
-#         iml = im_target.image_length.values
-#         imw = im_target.image_width.values
-#         return idx, image[0:iml, 0:imw, :]
 
     def show_output(self, obs, preds_m, preds_h):
-
-        # not sure if i want a way to display a full batch
-#         if xarray:
-#             plt.figure(figsize=(20, 20))
-#             columns = 4
-#             samples = [self.get_sample(obs, idx=i) for i in range(17)]
-#             for i, image in enumerate(samples):
-#                 plt.subplot(int(len(samples) / columns + 1), columns, i + 1)
-#                 plt.imshow(image[1])
-#                 plt.axis('off')
-#                 plt.title("Prediction", fontsize='xx-large')
 
         # Original Image
         ax = plt.subplot(1,3, 1)
@@ -191,6 +175,7 @@ class treenet:
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
         ax.set_aspect('equal')
+        
         # Predicted Tree Height
         ax = plt.subplot(1,3, 3)
         plt.imshow(preds_h.squeeze())
@@ -241,7 +226,7 @@ class treenet:
         og_image = np_image.copy()
         
         # want shape (1,14,240,240)
-        np_image = np.expand_dims(np_image[:14], axis=0)
+        np_image = np.expand_dims(np_image[:self.num_bands_input], axis=0)
         np_image[np_image  < .0000001] = 0 # Ensure no very small values (might have been an artifact of the original data)
         
         # normalize values of the input data to 0,1
