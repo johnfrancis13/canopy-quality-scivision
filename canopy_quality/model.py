@@ -2,12 +2,10 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
 from torchmetrics.classification import BinaryJaccardIndex
-from utils import custom_replace, calculate_iou
+from utils import custom_replace
 from data import batch_data_clean
 import pooch
 
@@ -187,6 +185,18 @@ class treenet:
         plt.show()
 
     def predict_batch(self, images: np.ndarray, batch_size: int):
+        # want shape (N, 14,240,240) or (N, 3,240,240)
+        if (len(images.shape)!=4) or (images.shape[1]!=14 and images.shape[1]!=3) or (images.shape[2]!=240 or images.shape[3]!=240):
+            raise ValueError("Images must be of shape (N, 14,240,240) or (N, 3,240,240)")
+            
+        if len(image)<=1:
+            raise ValueError("You must have multiple images to use predict_batch. If you only have one image try the predict function.")
+            
+        if batch_size<=1:
+            raise ValueError("batch_size must be greater than 1")
+            
+        if images.shape[1] != self.num_bands_input:
+            raise ValueError("Ensure the model you have selected and the images you input have matching numbers of light bands.") 
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         
@@ -220,7 +230,12 @@ class treenet:
         return all_tree_masks, all_tree_heights
 
     def predict(self, np_image: np.ndarray) -> np.ndarray:
-        # want shape (1,14,240,240)
+        # want shape (14,240,240) or (3,240,240)
+        if image.shape != (14, 240, 240) and image.shape != (3, 240, 240):
+            raise ValueError("Image shape must be of (14,240,240) or (3,240,240). If you have multiple images, use predict_batch.")       
+        
+        if len(image) != self.num_bands_input:
+            raise ValueError("Ensure the model you have selected and the image you input have matching numbers of light bands.") 
         
         # copy for plotting... better way to do this?
         og_image = np_image.copy()
