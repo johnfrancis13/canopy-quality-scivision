@@ -10,29 +10,34 @@ from data import batch_data_clean
 import pooch
 
 class treenet:
-    def __init__(self, model_weights: dict = None, model_type = "multi_spectral"):
+    name: str
+        
+    #def __init__(self, model_weights: dict = None, model_type = "multi_spectral"):
+    def __init__(self, model_weights: dict = None):
 
         if model_weights is None:
             # RGB
-            if model_type == "rgb":
+            if self.name == "rgb":
                 model_weights = dict(url="doi:10.5281/zenodo.10149636/pytorch_mtloss_partshared_manual.pt",
                                      known_hash="md5:76fceb351a331d354cbe4d8e3da8a363")
                 first_layer = 3
                 self.num_bands_input = 3
             
             # 14 band, RGB + NIR + Sentinel 2 (10 bands)    
-            if model_type == "multi_spectral":
+            if self.name == "ms":
                 model_weights = dict(url="https://zenodo.org/records/10149637/files/pytorch_mtloss_partshared_manual_allbands.pt",
                                   known_hash="md5:450007e5233c08f595d549b873a9ff12")
                 pooch.retrieve(url=model_weights['url'], known_hash= model_weights['known_hash'])
                 first_layer = 14
                 self.num_bands_input = 14
                 
-            if model_type != "rgb" and model_type != "multi_spectral":
-                raise ValueError("model_type must be one of ['rgb','multi_spectral']")
+            if self.name != "rgb" and self.name != "ms":
+                raise ValueError("model must be one of ['treenet_rgb','treenet_ms']")
 
         # ---- DOWNLOAD
         self.model_weights = pooch.retrieve(url=model_weights['url'], known_hash=model_weights['known_hash'])
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
 
         # ---- LOAD MODEL        
         def defineUNetModel_partiallyshared():
@@ -149,7 +154,7 @@ class treenet:
             model=UNet()
             return model
         
-        treenet = defineUNetModel_partiallyshared().to(device)   
+        treenet = defineUNetModel_partiallyshared().to(self.device)   
          
         # Load in the model weights
         treenet.load_state_dict(torch.load(self.model_weights, map_location=torch.device('cpu')))
@@ -189,7 +194,7 @@ class treenet:
         if (len(images.shape)!=4) or (images.shape[1]!=14 and images.shape[1]!=3) or (images.shape[2]!=240 or images.shape[3]!=240):
             raise ValueError("Images must be of shape (N, 14,240,240) or (N, 3,240,240)")
             
-        if len(image)<=1:
+        if len(images)<=1:
             raise ValueError("You must have multiple images to use predict_batch. If you only have one image try the predict function.")
             
         if batch_size<=1:
@@ -231,10 +236,10 @@ class treenet:
 
     def predict(self, np_image: np.ndarray) -> np.ndarray:
         # want shape (14,240,240) or (3,240,240)
-        if image.shape != (14, 240, 240) and image.shape != (3, 240, 240):
+        if np_image.shape != (14, 240, 240) and np_image.shape != (3, 240, 240):
             raise ValueError("Image shape must be of (14,240,240) or (3,240,240). If you have multiple images, use predict_batch.")       
         
-        if len(image) != self.num_bands_input:
+        if len(np_image) != self.num_bands_input:
             raise ValueError("Ensure the model you have selected and the image you input have matching numbers of light bands.") 
         
         # copy for plotting... better way to do this?
@@ -248,7 +253,7 @@ class treenet:
         np_image = np_image/np_image.max(axis=(1),keepdims=True)
         
         np_image = torch.from_numpy(np_image)
-        np_image = np_image.to(device)
+        np_image = np_image.to(self.device)
         np_image = Variable(np_image.float())
         #np_image = Variable(np_image.float().cuda())
         
@@ -262,6 +267,11 @@ class treenet:
 
         return pred_tree_mask, pred_tree_height
 
+class treenet_rgb(treenet):
+    name = 'rgb'
 
+class treenet_ms(treenet):
+    name = 'ms'
+    
 if __name__ == "__main__":
     pass
