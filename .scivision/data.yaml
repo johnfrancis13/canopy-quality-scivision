@@ -1,0 +1,14 @@
+sources:
+  canopy_quality:
+    description: Sample images required to demonstrate the canopy quality model, one of ms or rgb depending on the model
+    driver: intake_xarray.image.ImageSource
+    parameters:
+      image_type:
+        description: ms or rgb
+        type: str
+        default: ms
+        allowed:
+          - rgb
+          - ms
+    args:
+      urlpath: "doi:10.5281/zenodo.10378448/{{canopy_quality}}.zip"
