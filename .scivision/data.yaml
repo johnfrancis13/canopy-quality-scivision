@@ -11,4 +11,4 @@ sources:
           - rgb
           - ms
     args:
-      urlpath: "doi:10.5281/zenodo.10378448/{{canopy_quality}}.zip"
+      urlpath: "https://github.com/johnfrancis13/canopy_quality_scivision/tree/main/example_data/geotiff/ms/img1_ms.tif"
