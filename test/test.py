@@ -1,17 +1,7 @@
-import numpy as np
-from canopy_quality import treenet
+from canopy_quality import treenet_ms, treenet_rgb
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from torch.autograd import Variable
-from torchmetrics.classification import BinaryJaccardIndex
-from utils import custom_replace
-from data import batch_data_clean
-import pooch
-
-
+from scivision import load_dataset
 
 # test numpy array
 # load model
@@ -30,9 +20,16 @@ model = treenet_rgb()
 images = np.random.randint(255, size=(25, 3, 240, 240), dtype=np.uint8) ## create 3 band image
 y = model.predict_batch(images, batch_size=16)
 
+# predict on actual numpy image
+model = treenet_ms()
+a= np.load("example_data/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
+a = a[:14]
+print(a.shape)
+y = model.predict(np_image=a)
+
 # predict on actual image
 model = treenet_ms()
-a= np.load("../example_data/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
+a= np.load("example_data/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
 a = a[:14]
 print(a.shape)
 y = model.predict(np_image=a)
