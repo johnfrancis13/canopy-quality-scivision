@@ -11,4 +11,4 @@ sources:
           - rgb
           - ms
     args:
-      urlpath: "https://github.com/johnfrancis13/canopy_quality_scivision/tree/main/example_data/geotiff/ms/img1_ms.tif"
+      urlpath: "https://github.com/johnfrancis13/canopy_quality_scivision/tree/main/example_data/geotiff/{{image_type}}/img1_{{image_type}.tif"
