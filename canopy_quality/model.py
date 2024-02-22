@@ -4,9 +4,8 @@ import numpy as np
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
-from torchmetrics.classification import BinaryJaccardIndex
-from utils import custom_replace
-from data import batch_data_clean
+from .utils import custom_replace
+from .data import batch_data_clean
 import pooch
 
 class treenet:
