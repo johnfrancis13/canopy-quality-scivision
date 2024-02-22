@@ -2,6 +2,7 @@ from canopy_quality import treenet_ms, treenet_rgb
 import torch
 import numpy as np
 from scivision import load_dataset
+from scivision import load_pretrained_model
 
 # test numpy array
 # load model
@@ -32,3 +33,6 @@ model = treenet_ms()
 dataset = load_dataset('.scivision/data.yaml')
 img = dataset['canopy_quality'](image_type='ms', image_number=5).read()
 y = model.predict(img)
+
+# load pretrained model
+model = load_pretrained_model('.scivision/model.yaml')
