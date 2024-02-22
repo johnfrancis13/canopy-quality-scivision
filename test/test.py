@@ -27,9 +27,8 @@ a = a[:14]
 print(a.shape)
 y = model.predict(np_image=a)
 
-# predict on actual image
+# predict on actual geotiff image using scivision load_dataset
 model = treenet_ms()
-a= np.load("example_data/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
-a = a[:14]
-print(a.shape)
-y = model.predict(np_image=a)
+dataset = load_dataset('.scivision/data.yaml')
+img = dataset['canopy_quality'](image_type='ms', image_number=5).read()
+y = model.predict(img)
