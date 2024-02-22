@@ -1,7 +1,7 @@
 sources:
   canopy_quality:
     description: Sample images required to demonstrate the canopy quality model, one of ms or rgb depending on the model
-    driver: intake_xarray.image.ImageSource
+    driver: intake_xarray.raster.RasterIOSource
     parameters:
       image_type:
         description: ms or rgb
@@ -10,5 +10,9 @@ sources:
         allowed:
           - rgb
           - ms
+      image_number:
+        description: image number
+        type: int
+        default: 1
     args:
-      urlpath: "https://raw.githubusercontent.com/johnfrancis13/canopy_quality_scivision/main/example_data/geotiff/{{image_type}}/img1_{{image_type}}.tif"
+      urlpath: "https://raw.githubusercontent.com/johnfrancis13/canopy_quality_scivision/main/example_data/geotiff/{{image_type}}/img{{image_number}}_{{image_type}}.tif"
