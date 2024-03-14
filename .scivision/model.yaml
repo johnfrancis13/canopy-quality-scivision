@@ -1,11 +1,16 @@
 name: canopy_quality_model
 url: https://github.com/johnfrancis13/canopy-quality-scivision
 import: canopy_quality
-model: treenet_rgb
-prediction_fn:
-    call: predict
-    args:
-        X: np_image
-    kwargs:
-        batch_size: 1
-
+models:
+  - model: treenet_rgb
+    args: None
+    prediction_fn:
+        call: predict
+        args:
+            X: np_image
+  - model: treenet_ms
+    args: None
+    prediction_fn:
+        call: predict
+        args:
+            X: np_image

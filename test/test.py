@@ -35,4 +35,4 @@ img = dataset['canopy_quality'](image_type='ms', image_number=5).read()
 y = model.predict(img)
 
 # load pretrained model
-model = load_pretrained_model('.scivision/model.yaml')
+model = load_pretrained_model('.scivision/model.yaml', model_selection='rgb')
