@@ -7,10 +7,10 @@ models:
     prediction_fn:
         call: predict
         args:
-            X: np_image
+            X: image
   - model: treenet_ms
     args: None
     prediction_fn:
         call: predict
         args:
-            X: np_image
+            X: image
