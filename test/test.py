@@ -8,31 +8,18 @@ from scivision import load_pretrained_model
 # load model
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# load model
+# load and predict MS model
 model = treenet_ms()
-
-##predict on random image
 image = np.random.randint(255, size=(14, 240, 240), dtype=np.uint8) ## create 14 band image
-y = model.predict(np_image=image)
+y = model.predict(image)
 
-# predict on batch with rgb
+# load and predict RGB model
 model = treenet_rgb()
+images = np.random.randint(255, size=(3, 240, 240), dtype=np.uint8) ## create 3 band image
+y = model.predict(images)
 
-images = np.random.randint(255, size=(25, 3, 240, 240), dtype=np.uint8) ## create 3 band image
-y = model.predict_batch(images, batch_size=16)
-
-# predict on actual numpy image
-model = treenet_ms()
-a= np.load("example_data/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
-a = a[:14]
-print(a.shape)
-y = model.predict(np_image=a)
-
-# predict on actual geotiff image using scivision load_dataset
-model = treenet_ms()
+# load pretrained model from scivision
+model = load_pretrained_model('.scivision/model.yaml', model_selection='treenet_ms')
 dataset = load_dataset('.scivision/data.yaml')
 img = dataset['canopy_quality'](image_type='ms', image_number=5).read()
 y = model.predict(img)
-
-# load pretrained model
-model = load_pretrained_model('.scivision/model.yaml', model_selection='rgb')

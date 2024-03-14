@@ -246,7 +246,7 @@ class treenet:
             raise ValueError(
                 "Ensure the model you have selected and the image you input have matching numbers of light bands.")
 
-            # copy for plotting... better way to do this?
+        # copy for plotting... better way to do this?
         og_image = image.copy()
 
         # want shape (1,14,240,240)
