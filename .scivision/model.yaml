@@ -5,8 +5,7 @@ model: treenet_rgb
 prediction_fn:
     call: predict
     args:
-        X: image
+        X: np_image
     kwargs:
         batch_size: 1
-
 
