@@ -1,9 +1,9 @@
 name: canopy_quality_model
-url: https://github.com/johnfrancis13/canopy-quality-scivision
+url: .scivision/model.yaml
 import: canopy_quality
 model: treenet
 args:
-    model_type: multi_spectral
+    model_name: rgb
 prediction_fn:
     call: predict
     args:

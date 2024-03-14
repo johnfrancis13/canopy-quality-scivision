@@ -23,7 +23,7 @@ y = model.predict_batch(images, batch_size=16)
 
 # predict on actual numpy image
 model = treenet_ms()
-a= np.load("example_data/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
+a= np.load("example_data/numpy/ms/P_1_X0_1_X1_240_Y0_1_Y1_240_113.npy",allow_pickle=True)
 a = a[:14]
 print(a.shape)
 y = model.predict(np_image=a)
