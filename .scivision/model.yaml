@@ -10,5 +10,3 @@ prediction_fn:
         X: image
     kwargs:
         batch_size: 1
-
-
